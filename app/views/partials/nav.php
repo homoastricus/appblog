@@ -6,19 +6,13 @@
         <div class="collapse navbar-collapse" id="navbar">
             <ul class="navbar-nav align-items-center <?php echo theme('bg-dark','bg-white') ?>">
                 <li class="nav-item">
-                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/">Index</a>
+                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/">Главная (статьи)</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/users">Users</a>
+                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/users">Пользователи</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/about">About</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/contact">Contact</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="#" onclick="toggleDarkMode()">Dark Mode</a>
+                    <a class="nav-link <?php echo theme('text-light', 'text-primary') ?>" href="/about">Регистрация</a>
                 </li>
             </ul>
         </div>
