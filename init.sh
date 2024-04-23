@@ -2,7 +2,7 @@
 mkdir -p ./logs
 composer update
 
-if [$env=="dev"]
+if [[$env=="dev"]]
 then
   rm -rf ./config.php
   mv ./config_dev.php ./config.php
