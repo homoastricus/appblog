@@ -186,7 +186,7 @@ class ArticleController extends AppController
         if (empty($article)) {
             return View::view(null, 'error', ['error' => 'данная статья не найдена в блоге']);
         }
-        $current_user = (new \App\Components\UserComponent)->getCurrentUser();
+        $current_user = (new UserComponent)->getCurrentUser();
         $result = $this->Article->likeArticle($vars['id'], $current_user->id());
         echo json_encode(['result' => $result]);
         exit;

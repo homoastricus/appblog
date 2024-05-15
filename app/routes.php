@@ -45,8 +45,7 @@ try {
         $router->get('user/delete/{id}', 'UsersController@delete');
         $router->get('articles/{page}', 'ArticleController@index');
         $router->get('article/delete/{id}', 'ArticleController@delete');
-        $router->get('article/like/{id}', 'ArticleController@like');
-
+        $router->post('article/like/{id}', 'ArticleController@like');
         $router->post('users', 'UsersController@store');
         $router->post('user/update/{id}', 'UsersController@update');
         $router->post('article/create', 'ArticleController@create');
