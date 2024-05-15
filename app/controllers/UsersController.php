@@ -50,8 +50,8 @@ class UsersController extends AppController
         $page = $vars['page'] ?? 1;
         $offset = ($page - 1) * $limit;
         $users = $user->where([['id', '>', '0']], $limit, $offset)->get();
-        $this->response->statusCode(502);
-        $this->response->send();
+        //$this->response->statusCode(502);
+        //$this->response->send();
         return View::view('Users', 'users', compact('users', 'count', 'page', 'limit'));
     }
 
