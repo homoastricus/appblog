@@ -26,7 +26,7 @@ abstract class Model
      * The ID for the Model.
      * @var int
      */
-    protected int $id = 0;
+    public int $id = 0;
 
     /**
      * The columns for the Model.
@@ -93,13 +93,30 @@ abstract class Model
     /**
      * This method finds one or more rows matching specific criteria in the database and binds it to the Model, then returns the Model.
      * @param $where
+     * @param string $limit
+     * @param string $offset
+     * @param string $sort_column
+     * @param string $sort_dir
      * @return $this
      * @throws Exception
      */
-    public function where($where, $limit = "", $offset = ""): Model
+    public function where($where, string $limit = "", string $offset = "", string $sort_column = "", string $sort_dir = ""): Model
     {
         $this->cols = App::DB()->setClassName(get_class($this))->describe(static::$table);
-        $this->rows = App::DB()->setClassName(get_class($this))->selectAllWhere(static::$table, $where, $limit, $offset);
+        $this->rows = App::DB()->setClassName(get_class($this))->selectAllWhere(static::$table, $where, $limit, $offset,
+            $sort_column, $sort_dir);
+        return $this;
+    }
+
+    /**
+     * @param string $sort_column
+     * @param string $sort_dir
+     * @return $this
+     * @throws Exception
+     */
+    public function order(string $sort_column, string $sort_dir): Model
+    {
+        App::DB()->setClassName(get_class($this))->order($sort_column, $sort_dir);
         return $this;
     }
 

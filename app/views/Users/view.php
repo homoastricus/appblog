@@ -1,4 +1,4 @@
-<?php require('partials/header.php'); ?>
+<?php require(VIEW_DIR .'/partials/header.php'); ?>
 <h1 class="<?php echo theme('text-white-75', 'text-dark') ?>">Update <?php echo $user[0]->name ?>'s name:</h1>
 <div class="form-group">
 	<form method="POST" action="/user/update/<?php echo $user[0]->user_id ?>">
@@ -10,4 +10,4 @@
 <ul>
     <li><?php echo $user[0]->user_id; ?> - <?php echo $user[0]->name; ?></li>
 </ul>
-<?php require ('partials/footer.php'); ?>
+<?php require(VIEW_DIR .'/partials/footer.php'); ?>

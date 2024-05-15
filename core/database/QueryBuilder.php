@@ -20,13 +20,17 @@ class QueryBuilder
      * This is the class name a Model will be bound to.
      * @var
      */
-    protected $class_name;
+    protected string $class_name = "";
 
     /**
      * This is the current SQL query.
      * @var
      */
-    protected $sql;
+    protected string $sql;
+
+    protected string $order_column = "";
+
+    protected string $order_direction = "";
 
     /**
      * This method is the constructor for the QueryBuilder class and simply initializes a new PDO object.
@@ -60,7 +64,7 @@ class QueryBuilder
      * @param mixed $class_name
      * @return QueryBuilder
      */
-    public function setClassName($class_name): QueryBuilder
+    public function setClassName(mixed $class_name): QueryBuilder
     {
         $this->class_name = $class_name;
         return $this;
@@ -74,7 +78,7 @@ class QueryBuilder
      * @return array|false
      * @throws Exception
      */
-    public function selectAll(string $table, $limit = "", $offset = "")
+    public function selectAll(string $table, string $limit = "", string $offset = ""): bool|array
     {
         return $this->select($table, "*", $limit, $offset);
     }
@@ -85,12 +89,15 @@ class QueryBuilder
      * @param $where
      * @param string $limit
      * @param string $offset
+     * @param string $sort_column
+     * @param string $sort_dir
      * @return array|false
      * @throws Exception
      */
-    public function selectAllWhere(string $table, $where, $limit = "", $offset = "")
+    public function selectAllWhere(string $table, $where, string $limit = "", string $offset = "",
+                                   string $sort_column = "", string $sort_dir = ""): bool|array
     {
-        return $this->selectWhere($table, "*", $where, $limit, $offset);
+        return $this->selectWhere($table, "*", $where, $limit, $offset, $sort_column, $sort_dir);
     }
 
     /**
@@ -99,7 +106,7 @@ class QueryBuilder
      * @return  int|bool
      * @throws Exception
      */
-    public function count(string $table)
+    public function count(string $table): bool|int
     {
         $this->sql = "SELECT COUNT(*) FROM {$table}";
         try {
@@ -116,7 +123,6 @@ class QueryBuilder
      * This method returns the number of rows in a table where one or more conditions are matched.
      * @param string $table
      * @param $where
-     * @param string $columns
      * @return int|bool
      * @throws Exception
      */
@@ -145,11 +151,15 @@ class QueryBuilder
      * @return array|false
      * @throws Exception
      */
-    public function select(string $table, string $columns, $limit = "", $offset = "")
+    public function select(string $table, string $columns, string $limit = "", string $offset = ""): bool|array
     {
         $limit = $this->prepareLimit($limit);
         $offset = $this->prepareOffset($offset);
-        $this->sql = "SELECT {$columns} FROM {$table} {$limit} {$offset}";
+        $sort_sql = "";
+        if ($this->order_column !== "" && $this->order_direction !== "") {
+            $sort_sql = "order by $this->order_column $this->order_direction";
+        }
+        $this->sql = "SELECT {$columns} FROM {$table} {$sort_sql} {$limit} {$offset}";
         try {
             $statement = $this->pdo->prepare($this->sql);
             $statement->execute();
@@ -158,6 +168,17 @@ class QueryBuilder
             $this->handlePDOException($e);
         }
         return false;
+    }
+
+    /**
+     * @param string $order_column
+     * @param string $order_direction
+     * @return void
+     */
+    public function order(string $order_column, string $order_direction): void
+    {
+        $this->order_column = $order_column;
+        $this->order_direction = $order_direction;
     }
 
     /**
@@ -170,14 +191,18 @@ class QueryBuilder
      * @return array|false
      * @throws Exception
      */
-    public function selectWhere(string $table, string $columns, $where, $limit = "", $offset = "")
+    public function selectWhere(string $table, string $columns, $where, string $limit = "", string $offset = ""): bool|array
     {
         $limit = $this->prepareLimit($limit);
         $offset = $this->prepareOffset($offset);
         $where = $this->prepareWhere($where);
         $mapped_wheres = $this->prepareMappedWheres($where);
         $where = array_column($where, 3);
-        $this->sql = "SELECT {$columns} FROM {$table} WHERE {$mapped_wheres} {$limit} {$offset}";
+        $sort_sql = "";
+        if ($this->order_column !== "" && $this->order_direction !== "") {
+            $sort_sql = "order by $this->order_column $this->order_direction";
+        }
+        $this->sql = "SELECT {$columns} FROM {$table} WHERE {$mapped_wheres} {$sort_sql} {$limit} {$offset}";
         try {
             $statement = $this->pdo->prepare($this->sql);
             $statement->execute($where);
@@ -195,7 +220,7 @@ class QueryBuilder
      * @return int
      * @throws Exception
      */
-    public function delete(string $table, $limit = ""): int
+    public function delete(string $table, string $limit = ""): int
     {
         $limit = $this->prepareLimit($limit);
         $this->sql = "DELETE FROM {$table} {$limit}";
@@ -218,7 +243,7 @@ class QueryBuilder
      * @return int
      * @throws Exception
      */
-    public function deleteWhere(string $table, $where, $limit = ""): int
+    public function deleteWhere(string $table, $where, string $limit = ""): int
     {
         $limit = $this->prepareLimit($limit);
         $where = $this->prepareWhere($where);
@@ -270,7 +295,7 @@ class QueryBuilder
      * @return int
      * @throws Exception
      */
-    public function update(string $table, $parameters, $limit = ""): int
+    public function update(string $table, $parameters, string $limit = ""): int
     {
         $limit = $this->prepareLimit($limit);
         $set = $this->prepareNamed($parameters);
@@ -299,7 +324,7 @@ class QueryBuilder
      * @return int
      * @throws Exception
      */
-    public function updateWhere(string $table, $parameters, $where, $limit = ""): int
+    public function updateWhere(string $table, $parameters, $where, string $limit = ""): int
     {
         $limit = $this->prepareLimit($limit);
         $set = $this->prepareUnnamed($parameters);
@@ -330,7 +355,7 @@ class QueryBuilder
      * @return array|int
      * @throws Exception
      */
-    public function describe(string $table)
+    public function describe(string $table): int|array
     {
         $this->sql = "DESCRIBE {$table}";
         try {
@@ -372,7 +397,7 @@ class QueryBuilder
      * @param $where
      * @return mixed
      */
-    private function prepareWhere($where)
+    private function prepareWhere($where): mixed
     {
         $array = $where;
         foreach ($where as $key => $value) {
@@ -432,7 +457,7 @@ class QueryBuilder
     {
         $mapped_wheres = '';
         foreach ($where as $clause) {
-            $modifier = $mapped_wheres === '' ? '' : $clause[0];
+            $modifier = $mapped_wheres === '' ? '' : " AND ";
             $mapped_wheres .= " {$modifier} {$clause[1]} {$clause[2]} ?";
         }
         return $mapped_wheres;
@@ -474,7 +499,7 @@ class QueryBuilder
      * @param int $counter
      * @return mixed
      */
-    private function prepareParameters($parameters, $counter = 1)
+    private function prepareParameters($parameters, int $counter = 1): mixed
     {
         foreach ($array = $parameters as $key => $value) {
             unset($parameters[$key]);
@@ -490,7 +515,7 @@ class QueryBuilder
      * @param $array
      * @param int $counter
      */
-    private function prepareBindings(PDOStatement $PDOStatement, $array, $counter = 1): void
+    private function prepareBindings(PDOStatement $PDOStatement, $array, int $counter = 1): void
     {
         foreach ($array as $key => $value) {
             $PDOStatement->bindParam($counter, $value);
@@ -504,7 +529,7 @@ class QueryBuilder
      * @return mixed
      * @throws Exception
      */
-    private function handlePDOException(PDOException $e)
+    private function handlePDOException(PDOException $e): mixed
     {
         App::logError('There was a PDO Exception. Details: ' . $e);
         if (App::get('config')['options']['debug']) {
@@ -513,5 +538,3 @@ class QueryBuilder
         return view('error');
     }
 }
-
-?>

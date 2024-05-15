@@ -1,6 +1,7 @@
 <?php
 namespace App\Core;
 use Exception;
+use App\Core\Components\Controller as Controller;
 class Router
 {
     /*
@@ -60,12 +61,11 @@ class Router
     /**
      * @throws Exception
      */
-    public function direct($uri, $requestType)
+    public function direct($uri, $requestType, $request)
     {
         if (array_key_exists($uri, $this->routes[$requestType])) {
-            return $this->callAction(
-                ...explode('@', $this->routes[$requestType][$uri])
-            );
+            $arrr = explode('@', $this->routes[$requestType][$uri]);
+            return $this->callAction($arrr[0], $arrr[1], $request);
         }
 
         foreach ($this->routes[$requestType] as $key => $value) {
@@ -75,10 +75,11 @@ class Router
             array_shift($matches);
             if ($matches) {
                 $action = explode('@', $value);
-                return $this->callAction($action[0], $action[1], $matches);
+                return $this->callAction($action[0], $action[1], $request, $matches);
             }
         }
 
+        header("HTTP/1.1 404 Not Found");
         throw new Exception('No route defined for this URI.');
     }
     /*
@@ -87,11 +88,11 @@ class Router
     /**
      * @throws Exception
      */
-    protected function callAction($controller, $action, $vars = [])
+    protected function callAction($controller, $action,  Request $request, $vars = [])
     {
         $controller = "App\\Controllers\\{$controller}";
 
-        $controller = new $controller;
+        $controller = new $controller($request);
 
         if (!method_exists($controller, $action))
         {

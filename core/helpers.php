@@ -14,19 +14,9 @@ function redirect($path): void
 function view($name, $data = [])
 {
     extract($data);
-    return require "../app/views/{$name}.view.php";
+    return require "../app/views/{$name}.php";
 }
-/*
- * This function is used for dark mode functionality,
- * it returns the first (dark) class string
- * or second (light class string).
- */
-function theme($class, $secondClass) {
-    if (isset($_SESSION['darkmode']) && $_SESSION['darkmode'] == true) {
-        return $class;
-    }
-    return $secondClass;
-}
+
 /*
  * This function is used for dying and dumping.
  */
@@ -44,28 +34,28 @@ function paginate($table, $page, $limit, $count): string
 {
     $totalPages = ceil($count / $limit);
     $offset = ($page - 1) * $limit;
-    $output = "<span class='". theme('text-white-75', 'text-dark')  ."'>";
+    $output = "<span class='text-dark'>";
 
     $showFirstLast = App::Config()['pagination']['show_first_last'];
     
     if ($showFirstLast && $page > 1) {
-        $output .= "<a href='/{$table}/1' class='".  theme('text-light', 'text-primary') ."'>First</a> ";
+        $output .= "<a href='/{$table}/1' class='text-primary'>1</a> ";
     }
     
     if ($page > 1) {
         $prev = $page - 1;
-        $output .= "<a href='/{$table}/{$prev}' class='".  theme('text-light', 'text-primary') ."'>Prev</a> ";
+        $output .= "<a href='/{$table}/{$prev}' class='text-primary'>назад</a> ";
     }
 
-    $output .= " Page $page ";
+    $output .= " стр. $page ";
     
     if ($count > ($offset + $limit)) {
         $next = $page + 1;
-        $output .= "<a href='/{$table}/{$next}' class='".  theme('text-light', 'text-primary')  ."'>Next</a> ";
+        $output .= "<a href='/{$table}/{$next}' class='text-primary'>вперед</a> ";
     }
     
     if ($showFirstLast && $page < $totalPages) {
-        $output .= "<a href='/{$table}/{$totalPages}' class='".  theme('text-light', 'text-primary') ."'>Last</a>";
+        $output .= "<a href='/{$table}/{$totalPages}' class='text-primary'>последняя</a>";
     }
 
     $output .= "</span>";
@@ -99,4 +89,112 @@ function display_errors(): void
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
+}
+
+function now_date(): string
+{
+    return date('Y-m-d H:i:s');
+}
+
+if (!function_exists('env')) {
+
+    /**
+     * Gets an environment variable from available sources, and provides emulation
+     * for unsupported or inconsistent environment variables (i.e. DOCUMENT_ROOT on
+     * IIS, or SCRIPT_NAME in CGI mode). Also exposes some additional custom
+     * environment information.
+     *
+     * @param string $key Environment variable name.
+     * @return string|bool|null Environment variable setting.
+     */
+    function env($key) {
+        if ($key === 'HTTPS') {
+            if (isset($_SERVER['HTTPS'])) {
+                return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+            }
+            return (strpos(env('SCRIPT_URI'), 'https://') === 0);
+        }
+
+        if ($key === 'SCRIPT_NAME') {
+            if (env('CGI_MODE') && isset($_ENV['SCRIPT_URL'])) {
+                $key = 'SCRIPT_URL';
+            }
+        }
+
+        $val = null;
+        if (isset($_SERVER[$key])) {
+            $val = $_SERVER[$key];
+        } elseif (isset($_ENV[$key])) {
+            $val = $_ENV[$key];
+        } elseif (getenv($key) !== false) {
+            $val = getenv($key);
+        }
+
+        if ($key === 'REMOTE_ADDR' && $val === env('SERVER_ADDR')) {
+            $addr = env('HTTP_PC_REMOTE_ADDR');
+            if ($addr !== null) {
+                $val = $addr;
+            }
+        }
+
+        if ($val !== null) {
+            return $val;
+        }
+
+        switch ($key) {
+            case 'DOCUMENT_ROOT':
+                $name = env('SCRIPT_NAME');
+                $filename = env('SCRIPT_FILENAME');
+                $offset = 0;
+                if (!strpos($name, '.php')) {
+                    $offset = 4;
+                }
+                return substr($filename, 0, -(strlen($name) + $offset));
+            case 'PHP_SELF':
+                return str_replace(env('DOCUMENT_ROOT'), '', env('SCRIPT_FILENAME'));
+            case 'CGI_MODE':
+                return (PHP_SAPI === 'cgi');
+            case 'HTTP_BASE':
+                $host = env('HTTP_HOST');
+                $parts = explode('.', $host);
+                $count = count($parts);
+
+                if ($count === 1) {
+                    return '.' . $host;
+                } elseif ($count === 2) {
+                    return '.' . $host;
+                } elseif ($count === 3) {
+                    $gTLD = array(
+                        'aero',
+                        'asia',
+                        'biz',
+                        'cat',
+                        'com',
+                        'coop',
+                        'edu',
+                        'gov',
+                        'info',
+                        'int',
+                        'jobs',
+                        'mil',
+                        'mobi',
+                        'museum',
+                        'name',
+                        'net',
+                        'org',
+                        'pro',
+                        'tel',
+                        'travel',
+                        'xxx'
+                    );
+                    if (in_array($parts[1], $gTLD)) {
+                        return '.' . $host;
+                    }
+                }
+                array_shift($parts);
+                return '.' . implode('.', $parts);
+        }
+        return null;
+    }
+
 }

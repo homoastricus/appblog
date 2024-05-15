@@ -8,6 +8,9 @@
         "phpunit/phpunit": "^9"
     },
   "require": {
-    "ext-pdo": "*"
+    "ext-pdo": "*",
+    "ext-mbstring": "*",
+    "phpmailer/phpmailer": "^6.0",
+    "ext-gd": "*"
   }
 }

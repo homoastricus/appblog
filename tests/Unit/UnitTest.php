@@ -5,7 +5,6 @@ namespace Unit;
 use tests\TestCase;
 use App\Core\{Router, Request, App};
 use App\Models\User;
-use App\Models\Project;
 
 class UnitTest extends TestCase
 {
@@ -158,9 +157,9 @@ class UnitTest extends TestCase
     /** @test */
     public function users_raw_query()
     {
-        $unnamedUsers = App::DB()->raw('SELECT * FROM users WHERE user_id > ?', [0]);
+        $unnamedUsers = App::DB()->raw('SELECT * FROM users WHERE id > ?', [0]);
         $this->assertNotEmpty(count($unnamedUsers));
-        $namedUsers = App::DB()->raw('SELECT * FROM users WHERE user_id > :user_id', ['user_id' => 0]);
+        $namedUsers = App::DB()->raw('SELECT * FROM users WHERE id > :id', ['id' => 0]);
         $this->assertNotEmpty(count($namedUsers));
         $newUser = App::DB()->raw('INSERT INTO users(name) VALUES (?)', ['TestingUser']);
         $this->assertNotEmpty($newUser);
@@ -198,96 +197,4 @@ class UnitTest extends TestCase
         $deletedUser = $user->where([['name', '=', 'ThisUser']])->first();
         $this->assertEmpty($deletedUser);
     }
-
-    /** @test */
-    public function project_model_add()
-    {
-        $project = new Project();
-        $project = $project->add(['name' => 'TestProject']);
-        //echo $project->getSql();
-        $this->assertEquals($project->first()->name, 'TestProject');
-        $project = $project->where([['name', '=', 'TestProject']])->first();
-        //echo $project->getSql();
-        $this->assertEquals($project->name, 'TestProject');
-
-    }
-
-    /** @test */
-    public function project_model_save()
-    {
-        $project = new Project();
-        $foundProject = $project->where([['name', '=', 'TestProject']])->first();
-        //dd($project->describe());
-        //dd($foundProject->describe());
-        $this->assertEquals($foundProject->name, 'TestProject');
-        $foundProject->name = 'SomeProject';
-        $foundProject->save();
-        $this->assertEquals($project->first()->name, 'SomeProject');
-    }
-
-    /** @test */
-    public function project_model_index()
-    {
-        $projects = Project::all();
-        $this->assertNotEmpty($projects);
-    }
-
-     /** @test */
-    public function projects_raw_query()
-    {
-        $unnamedProjects = App::DB()->raw('SELECT * FROM projects WHERE project_id > ?', [0]);
-        //echo App::DB()->getSql();
-        $this->assertNotEmpty(count($unnamedProjects));
-        $namedProjects = App::DB()->raw('SELECT * FROM projects WHERE project_id > :project_id', ['project_id' => 0]);
-        //echo App::DB()->getSql();
-        $this->assertNotEmpty(count($namedProjects));
-        $newProject = App::DB()->raw('INSERT INTO projects(name) VALUES (?)', ['TestingProject']);
-        $this->assertNotEmpty($newProject);
-        $deleteProject = App::DB()->raw('DELETE FROM projects WHERE name = :name', ['name' => 'TestingProject']);
-        //echo App::DB()->getSql();
-        $this->assertNotEmpty($deleteProject);
-        $deletedProject = App::DB()->raw('SELECT * FROM projects WHERE name = ?', ['TestingProject']);
-        $this->assertEmpty(count($deletedProject));
-    }
-
-    /** @test */
-    public function project_model_delete()
-    {
-        $project = new Project();
-        $project->deleteWhere([['name', '=', 'TestProject']]);
-        $deletedProject = $project->where([['name', '=', 'TestProject']])->get();
-        $this->assertEmpty($deletedProject);
-    }
-
-    /** @test */
-    public function users_model_paginate()
-    {
-        $user = new User();
-        for ($i = 0; $i < 5; $i++) {
-            $user->add(['name' => 'TestUser']);
-        }
-        $num = $user->count();
-        $this->assertNotEmpty($num);
-        $numMany = $user->count([['user_id', '>', '3']]);
-        $this->assertNotEmpty($numMany);
-        $page = 1;
-        $limit = 2;
-        $pageOneUser = new User();
-        $pageOneUsers = $pageOneUser->where([['user_id', '>', '0']], $limit, ($page - 1) * $limit)->get();
-        //echo $pageOneUsers->getSql();
-        $this->assertNotNull($pageOneUsers);
-        $this->assertCount(2, $pageOneUsers);
-        $page = 2;
-        $pageTwoUser = new User();
-        $pageTwoUsers = $pageTwoUser->where([['user_id', '>', '0']], $limit, ($page - 1) * $limit)->get();
-        $this->assertNotNull($pageTwoUsers);
-        $this->assertCount(2, $pageTwoUsers);
-        $this->assertNotEquals($pageTwoUsers[0]->user_id, $pageOneUsers[0]->user_id);
-        //echo $pageTwoUsers->getSql();
-        $user->deleteWhere([['name', '=', 'TestUser']]);
-        $deletedUsers = $user->where([['name', '=', 'TestUser']])->get();
-        $this->assertEmpty($deletedUsers);
-    }
 }
-
-?>

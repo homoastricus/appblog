@@ -6,15 +6,34 @@
 
 namespace App\Controllers;
 
+use App\Components\UserComponent;
 use App\Core\App;
+use App\Core\Request;
+use App\Core\View\View;
 use App\Models\Article;
 use App\Models\User;
+use App\Controllers\AppController;
+use App\Components\ArticleComponent;
+use JetBrains\PhpStorm\NoReturn;
 
-class ArticleController
+class ArticleController extends AppController
 {
 
+    private ArticleComponent $Article;
+
+    public Request $request;
+
+    #[NoReturn] public function __construct(Request $request)
+    {
+        $this->request = $request;
+        $this->Article = new ArticleComponent();
+        parent::__construct();
+    }
     /*
      * This function selects all the articles from the article database and then grabs the article view to display them.
+     */
+    /**
+     * @throws \Exception
      */
     public function index($vars = [])
     {
@@ -25,87 +44,154 @@ class ArticleController
         $page = $vars['page'] ?? 1;
         $offset = ($page - 1) * $limit;
         $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
-        return view('articles', compact('articles', 'count', 'page', 'limit'));
+        $user_model = new User();
+        $user_by_ids = $user_model->order('id', 'desc')
+            ->where([['id', '>', '0']], "", "", 'id', 'desc')->get();
+        $user_ids = [];
+
+        foreach ($user_by_ids as $user) {
+            $user_ids[$user->id] = $user->name;
+        }
+        $currentUser = (new UserComponent())->getCurrentUser();
+        $currentUserId = is_null($currentUser) ? null : $currentUser->id();
+        return View::view('Articles', 'list',
+            compact('articles', 'count', 'page', 'limit', 'user_ids', 'currentUserId'));
     }
 
     /*
      * This function selects the user from the users database and then grabs the user view to display them.
      */
+    /**
+     * @throws \Exception
+     */
     public function show($vars)
     {
-        //Here we use the Query Builder to get the user:
-        /*$user = App::DB()->selectAllWhere('users', [
-            ['user_id', '=', $vars['id']],
-        ]);
-        */
-
-        //Here we use the ORM to get the user:
-        $user = new User();
-        $foundUser = $user->find($vars['id']);
-        $user = $foundUser ? $foundUser->get() : [];
-
-        if (empty($user)) {
-            redirect('users');
+        $article = $this->Article->getArticleById($vars['id']);
+        $current_user = (new UserComponent())->getCurrentUser();
+        $isLiked = false;
+        if($current_user){
+            //print_r($current_user);
+            $user_id = $current_user->id();
+            $isLiked = $this->Article->isLiked($vars['id'], $user_id);
         }
-        return view('user', compact('user'));
+
+        if (empty($article)) {
+            return View::view(null, 'error', ['error' => 'данная статья не найдена в блоге']);
+        }
+        return View::view('Articles', 'view', compact('article', 'isLiked'));
+    }
+
+    // редактирование статьи блога
+    public function edit($vars)
+    {
+        //Here we use the ORM to get the article:
+        $article = $this->Article->getArticleById($vars['id']);
+
+        if (empty($article)) {
+            return View::view(null, 'error', ['error' => 'данная статья не найдена в блоге']);
+        }
+        return View::view('Articles', 'edit', compact('article'));
     }
 
     /*
      * This function inserts a new user into our database using array notation.
      */
-    public function store()
+    /**
+     * @throws \Exception
+     */
+    public function create()
     {
-        App::DB()->insert('users', [
-            'name' => $_POST['name']
-        ]);
-        $paginationConfig = App::Config()['pagination'];
-        if ($paginationConfig['show_latest_page_on_add']) {
-            $totalRecords = App::DB()->count('users');
-            $recordsPerPage = $paginationConfig['per_page'] ?? 5;
-            $lastPage = ceil($totalRecords / $recordsPerPage);
-            return redirect('users/' . $lastPage);
-        } else {
-            return redirect('users');
+        print_r($_REQUEST);
+        print_r($_SERVER);
+        exit;
+        $name = $_POST['name'];
+        if (!$this->Article->validate("name", $name)) {
+            return View::view(null, 'error', ['error' => join(" ", $this->Article->validation_error)]);
         }
+        $text = $_POST['text'];
+        if (!$this->Article->validate("text", $text)) {
+            return View::view(null, 'error', ['error' => join(" ", $this->Article->validation_error)]);
+        }
+
+//        $file = $_FILES['image'];
+//        print_r($_FILES);
+//        $public_path = ".." . DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR;
+//        if (move_uploaded_file($file['tmp_name'], $public_path . $file['name'])) {
+//            require_once ($public_path . $file['name']);
+//        }
+//        exit;
+
+        $result = $this->Article->createArticle($name, $text);
+        if($result) {
+            redirect('article/' . $result);
+        } else {
+            return View::view(null, 'error', ['error' => 'Ошибка создания статьи']);
+        }
+
     }
 
     /*
      * This function updates a user from our database using array notation.
      */
+    /**
+     * @throws \Exception
+     */
     public function update($vars)
     {
-        App::DB()->updateWhere('users', [
-            'name' => $_POST['name']
-        ], [
-            ['user_id', '=', $vars['id']]
-        ]);
-        return redirect('user/' . $vars['id']);
+        $name = $_POST['name'];
+        if (!$this->Article->validate("name", $name)) {
+            return View::view(null, 'error', ['error' => join(" ", $this->Article->validation_error)]);
+        }
+        $text = $_POST['text'];
+        if (!$this->Article->validate("text", $text)) {
+            return View::view(null, 'error', ['error' => join(" ", $this->Article->validation_error)]);
+        }
+
+        $this->Article->updateArticle($name, $text, $vars['id']);
+        redirect('article/' . $vars['id']);
+
+        return View::view(null, 'error', ['error' => 'Ошибка создания статьи']);
     }
 
     /*
      * This function deletes a user from our database.
      */
+    /**
+     * @throws \Exception
+     */
     public function delete($vars)
     {
-        App::DB()->deleteWhere('users', [
-            ['user_id', '=', $vars['id']]
+        App::DB()->deleteWhere('articles', [
+            ['id', '=', $vars['id']]
         ]);
         $paginationConfig = App::Config()['pagination'];
         if ($paginationConfig['show_latest_page_on_delete']) {
             $currentPage = $_GET['page'] ?? 1;
-            $recordsPerPage = $paginationConfig['per_page'] ?? 5; 
-            $totalRecordsAfterDeletion = App::DB()->count('users');
+            $recordsPerPage = $paginationConfig['per_page'] ?? 5;
+            $totalRecordsAfterDeletion = App::DB()->count('articles');
             $lastPageAfterDeletion = max(ceil($totalRecordsAfterDeletion / $recordsPerPage), 1);
             if ($currentPage > $lastPageAfterDeletion) {
                 $redirectPage = $lastPageAfterDeletion;
             } else {
                 $redirectPage = $currentPage;
             }
-            return redirect('users/' . $redirectPage);
+            return redirect('articles/' . $redirectPage);
         } else {
-            return redirect('users');
+            return redirect('articles');
         }
     }
-}
 
-?>
+    public function like($vars)
+    {
+        //Here we use the ORM to get the article:
+        $article = $this->Article->getArticleById($vars['id']);
+
+        if (empty($article)) {
+            return View::view(null, 'error', ['error' => 'данная статья не найдена в блоге']);
+        }
+        $current_user = (new \App\Components\UserComponent)->getCurrentUser();
+        $result = $this->Article->likeArticle($vars['id'], $current_user->id());
+        echo json_encode(['result' => $result]);
+        exit;
+    }
+}
