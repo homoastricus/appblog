@@ -101,9 +101,6 @@ class ArticleController extends AppController
      */
     public function create()
     {
-        print_r($_REQUEST);
-        print_r($_SERVER);
-        exit;
         $name = $_POST['name'];
         if (!$this->Article->validate("name", $name)) {
             return View::view(null, 'error', ['error' => join(" ", $this->Article->validation_error)]);
