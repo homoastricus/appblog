@@ -50,7 +50,7 @@ class ArticleController extends AppController
         if (!$this->redis->get("articles") OR $this->redis->ttl('articles')<=0) {
             $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
             $art_data = json_encode($articles);
-            $this->redis->setex("articles", 40, $art_data);
+            $this->redis->setex("articles", 11, $art_data);
             //$this->redis->expire('articles', 40);
             $source = "database";
         } else {
