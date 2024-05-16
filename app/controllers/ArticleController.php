@@ -46,12 +46,13 @@ class ArticleController extends AppController
         $offset = ($page - 1) * $limit;
 
         $redis = new RedisManager();
-        if ($redis->get("articles") !== null) {
+        if (!$redis->get("articles")) {
+            $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
+            $articles = $redis->set("articles", $articles);
+            $source = "database";
+        } else {
             $articles = $redis->get("articles");
             $source = "redis";
-        } else {
-            $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
-            $source = "database";
         }
 
         $user_model = new User();

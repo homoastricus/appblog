@@ -29,5 +29,12 @@ class RedisManager
         return $this->redis->get($key);
     }
 
+    /**
+     * @throws \RedisException
+     */
+    public function set($key, $value): bool|Redis
+    {
+        return $this->redis->set($key, $value);
+    }
 
 }
