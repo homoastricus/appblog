@@ -47,7 +47,7 @@ class ArticleController extends AppController
         $page = $vars['page'] ?? 1;
         $offset = ($page - 1) * $limit;
 
-        if (!$this->redis->get("articles") OR $this->redis->ttl('articles')<=0) {
+        if (!$this->redis->get("articles")) {
             $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
             $art_data = json_encode($articles);
             $this->redis->setex("articles", 11, $art_data);
