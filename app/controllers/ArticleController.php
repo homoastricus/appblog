@@ -48,7 +48,7 @@ class ArticleController extends AppController
         $redis = new RedisManager();
         if (!$redis->get("articles")) {
             $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
-            $articles = $redis->set("articles", $articles);
+            $redis->set("articles", $articles);
             $source = "database";
         } else {
             $articles = $redis->get("articles");
