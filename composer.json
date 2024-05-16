@@ -11,6 +11,7 @@
     "ext-pdo": "*",
     "ext-mbstring": "*",
     "phpmailer/phpmailer": "^6.0",
-    "ext-gd": "*"
+    "ext-gd": "*",
+    "ext-redis": "*"
   }
 }

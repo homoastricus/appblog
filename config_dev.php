@@ -24,5 +24,9 @@ return [
         'show_first_last' => true,
         'show_latest_page_on_add' => true,
         'show_latest_page_on_delete' => true,
+    ],
+    'redis' => [
+        'port' => 6379,
+        'host' => '127.0.0.1'
     ]
 ];

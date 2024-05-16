@@ -1,4 +1,6 @@
-<?php require(VIEW_DIR . '/partials/header.php'); ?>
+<?php require(VIEW_DIR . '/partials/header.php');
+
+echo "данные взяты из " . $source;?>
 <ul>
     <?php foreach ($articles as $article) : ?>
         <li class="text-dark">

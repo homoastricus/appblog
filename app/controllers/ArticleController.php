@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Controllers\AppController;
 use App\Components\ArticleComponent;
 use JetBrains\PhpStorm\NoReturn;
+use App\Core\Service\RedisManager;
 
 class ArticleController extends AppController
 {
@@ -43,7 +44,16 @@ class ArticleController extends AppController
         $limit = $paginationConfig['per_page'] ?? 5;
         $page = $vars['page'] ?? 1;
         $offset = ($page - 1) * $limit;
-        $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
+
+        $redis = new RedisManager();
+        if ($redis->get("articles") !== null) {
+            $articles = $redis->get("articles");
+            $source = "redis";
+        } else {
+            $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
+            $source = "database";
+        }
+
         $user_model = new User();
         $user_by_ids = $user_model->order('id', 'desc')
             ->where([['id', '>', '0']], "", "", 'id', 'desc')->get();
@@ -54,8 +64,10 @@ class ArticleController extends AppController
         }
         $currentUser = (new UserComponent())->getCurrentUser();
         $currentUserId = is_null($currentUser) ? null : $currentUser->id();
+
+
         return View::view('Articles', 'list',
-            compact('articles', 'count', 'page', 'limit', 'user_ids', 'currentUserId'));
+            compact('articles', 'count', 'page', 'limit', 'user_ids', 'currentUserId', 'source'));
     }
 
     /*
@@ -69,7 +81,7 @@ class ArticleController extends AppController
         $article = $this->Article->getArticleById($vars['id']);
         $current_user = (new UserComponent())->getCurrentUser();
         $isLiked = false;
-        if($current_user){
+        if ($current_user) {
             //print_r($current_user);
             $user_id = $current_user->id();
             $isLiked = $this->Article->isLiked($vars['id'], $user_id);
@@ -119,7 +131,7 @@ class ArticleController extends AppController
 //        exit;
 
         $result = $this->Article->createArticle($name, $text);
-        if($result) {
+        if ($result) {
             redirect('article/' . $result);
         } else {
             return View::view(null, 'error', ['error' => 'Ошибка создания статьи']);
