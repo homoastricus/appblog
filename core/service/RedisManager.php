@@ -55,6 +55,14 @@ class RedisManager
     /**
      * @throws RedisException
      */
+    public function setex($key, $lifetime, $value): void
+    {
+        $this->redis->setex($key, $lifetime, $value);
+    }
+
+    /**
+     * @throws RedisException
+     */
     public function __destruct()
     {
         $this->redis->close();
