@@ -23,11 +23,13 @@ class ArticleController extends AppController
     private ArticleComponent $Article;
 
     public Request $request;
+    private RedisManager $redis;
 
     #[NoReturn] public function __construct(Request $request)
     {
         $this->request = $request;
         $this->Article = new ArticleComponent();
+        $this->redis = new RedisManager();
         parent::__construct();
     }
     /*
@@ -45,14 +47,14 @@ class ArticleController extends AppController
         $page = $vars['page'] ?? 1;
         $offset = ($page - 1) * $limit;
 
-        $redis = new RedisManager();
-        if (!$redis->get("articles")) {
+        if (!$this->redis->get("articles") OR $this->redis->ttl('articles')<=0) {
             $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
             $art_data = json_encode($articles);
-            $redis->set("articles", $art_data);
+            $this->redis->set("articles", $art_data);
+            $this->redis->expire('articles', 40);
             $source = "database";
         } else {
-            $art_data = $redis->get("articles");
+            $art_data = $this->redis->get("articles");
             $articles = json_decode($art_data);
             $source = "redis";
         }

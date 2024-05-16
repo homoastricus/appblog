@@ -4,37 +4,60 @@ namespace App\Core\Service;
 
 use App\Core\App;
 use Redis;
+use RedisException;
 
 class RedisManager
 {
-    private $connected = false;
 
-    public $redis = null;
+    public ?Redis $redis = null;
 
+    /**
+     * @throws RedisException
+     * @throws \Exception
+     */
     public function __construct()
     {
-        $redis_port = App::get('config')['redis']['port'];
-        $redis_host = App::get('config')['redis']['host'];
         $this->redis = new Redis();
-        $this->redis->connect($redis_host, $redis_port);
-        if (!is_null($this->redis)) {
-            $this->connected = true;
-        }
+        $this->redis->connect(App::get('config')['redis']['host'], App::get('config')['redis']['port']);
     }
 
     /**
-     * @throws \RedisException
+     * @throws RedisException
      */
     public function get($key){
         return $this->redis->get($key);
     }
 
     /**
-     * @throws \RedisException
+     * @throws RedisException
      */
     public function set($key, $value): bool|Redis
     {
         return $this->redis->set($key, $value);
+    }
+
+    /**
+     * @throws RedisException
+     */
+    public function expire($key, $lifetime): bool|Redis
+    {
+        return $this->redis->expire($key, $lifetime);
+    }
+
+    /**
+     * @throws RedisException
+     */
+    public function ttl($key): bool|Redis
+    {
+        return $this->redis->ttl($key);
+    }
+
+    /**
+     * @throws RedisException
+     */
+    public function __destruct()
+    {
+        $this->redis->close();
     }
 
 }
