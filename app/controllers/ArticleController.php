@@ -48,11 +48,11 @@ class ArticleController extends AppController
         $offset = ($page - 1) * $limit;
 
         if (!$this->redis->get("articles")) {
+            // имитация долгого запроса в БД
             sleep(2);
             $articles = $article->where([['id', '>', '0']], $limit, $offset)->get();
             $art_data = json_encode($articles);
             $this->redis->setex("articles", 11, $art_data);
-            //$this->redis->expire('articles', 40);
             $source = "database";
         } else {
             $art_data = $this->redis->get("articles");
